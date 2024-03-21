@@ -41,12 +41,15 @@ import qualified TRSConversion.Formats.COPS.Parse.Problem as COPS
 import qualified TRSConversion.Formats.COPS.Parse.Utils as COPS
 import TRSConversion.Formats.COPS.Unparse.Problem (unparseCopsCOMProblem, unparseCopsProblem)
 import TRSConversion.Formats.CPF3.Unparse.Problem (problemToXML)
+import qualified TRSConversion.Formats.XTC.Parse.Problem as XTC
+import qualified TRSConversion.Formats.XTC.Unparse.Problem as XTC
 import TRSConversion.Parse.Utils (parseIO)
 
 data Format
   = COPS
   | ARI
   | CPF3
+  | XTC
   deriving (Eq, Ord, Enum, Bounded, Show)
 
 -- | @Config@ holds the information parsed from the options given on the command line.
@@ -206,6 +209,7 @@ contextFromConfig conf = do
     "COPS" -> Right COPS
     "ARI" -> Right ARI
     "CPF3" -> Right CPF3
+    "XTC" -> Right XTC
     _ ->
       Left
         $ unlines
@@ -227,6 +231,13 @@ runApp config inputFile = do
     CPF3 -> do
       hPutStrLn stderr $ "ERROR: CPF3 is currently only supported as a target (not a source)"
       exitFailure
+    XTC -> do
+      trs <- XTC.parse inputFile
+      case trs of
+        Left err -> do
+          hPutStrLn stderr $ "ERROR: " ++ err
+          exitFailure
+        Right x -> return x
 
   -- modify meta-info
   let metaInfo = MetaInfo.copsNum (Problem.metaInfo problem)
@@ -240,6 +251,7 @@ runApp config inputFile = do
       | otherwise -> renderPretty <$> unparseIO unparseCopsProblem problem'
     ARI -> renderPretty <$> unparseIO unparseAriProblem problem'
     CPF3 -> pure $ renderText def (problemToXML problem')
+    XTC -> renderPretty <$> unparseIO XTC.unparse problem'
   outputHandle <- case outputFile config of
     Nothing -> pure stdout
     Just fp -> openFile fp WriteMode

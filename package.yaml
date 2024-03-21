@@ -38,6 +38,7 @@ dependencies:
   - containers >= 0.6.0.1 && < 0.8
   - xml-conduit >= 1.9.1.1 && < 1.10
   - xml-hamlet >= 0.5.0.2 && < 0.6
+  - tpdb >= 2.7.2
 ghc-options:
   - -Wall
   - -Wcompat
