@@ -74,5 +74,5 @@ convertReplacementMap (TPDB.Signature fs) = Right $
             let f' = Text.unpack $ TPDB.fs_name f in
             case TPDB.fs_replacementmap f of
                 Just (TPDB.Replacementmap m) -> (f',m)
-                Nothing -> (f',[0..TPDB.fs_arity f])) fs
+                Nothing -> (f',[1..TPDB.fs_arity f])) fs
 convertReplacementMap TPDB.HigherOrderSignature = Left "higher order is not yet supported"
