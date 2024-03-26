@@ -47,7 +47,7 @@ convertProblem p =
 
 buildProblem :: SrcSignature -> Maybe SrcReplacementMap -> [SrcRule] -> Either String DstProblem
 buildProblem src_signature replacement_map src_rules = do
-    let dst_rules = map convertRule src_rules
+    dst_rules <- mapM convertRule src_rules
     let dst_signature = convertSignature replacement_map src_signature
     trs <- buildTrs dst_signature dst_rules
     return TPDB.Problem {
@@ -68,13 +68,15 @@ buildTrs TPDB.HigherOrderSignature _ = Left "higher order is not yet supported"
 symbol :: String -> Int -> TPDB.Identifier
 symbol s a = TPDB.mk a $ Text.pack s
 
-convertRule :: SrcRule -> DstRule
-convertRule (Ari.Rule lhs rhs) = TPDB.Rule {
-    TPDB.lhs = convertTerm lhs,
-    TPDB.rhs = convertTerm rhs,
-    TPDB.relation = TPDB.Strict,
-    TPDB.top = False,
-    TPDB.original_variable = Nothing}
+convertRule :: SrcRule -> Either String DstRule
+convertRule (Ari.Rule lhs rhs cost) =
+    if cost /= 0 && cost /= 1 then Left "XTC only supports cost 0 and 1" else
+    Right TPDB.Rule {
+        TPDB.lhs = convertTerm lhs,
+        TPDB.rhs = convertTerm rhs,
+        TPDB.relation = if cost == 1 then TPDB.Strict else TPDB.Weak,
+        TPDB.top = False,
+        TPDB.original_variable = Nothing}
 
 convertTerm :: SrcTerm -> DstTerm
 convertTerm (Ari.Var x) = TPDB.Var $ symbol x 0

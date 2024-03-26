@@ -14,6 +14,8 @@ module TRSConversion.Problem.Common.Rule (
   inferSigFromRules,
   ruleVars,
   ruleFuns,
+  mkRule,
+  mkRuleWithCost
 )
 where
 
@@ -30,6 +32,9 @@ data Rule f v = Rule
   -- ^ The left-hand side of the rule
   , rhs :: Term f v
   -- ^ The right-hand side of the rule
+  , cost :: Int
+  -- ^ The cost of the rule. 1 for standard rewriting, 0 for relative rules.
+  --   Other costs are of interest for complexity and probabilistic termination.
   }
   deriving (Eq, Show)
 
@@ -40,11 +45,8 @@ mapRule = map
 -- | @map f v@ maps the function @f@ over all function symbols and the
 -- function @v@ over all variables in the rule
 map :: (f -> f') -> (v -> v') -> Rule f v -> Rule f' v'
-map f v (Rule{lhs = l, rhs = r}) =
-  Rule
-    { lhs = Term.map f v l
-    , rhs = Term.map f v r
-    }
+map f v (Rule{lhs = l, rhs = r, cost = c}) =
+  mkRuleWithCost (Term.map f v l) (Term.map f v r) c
 
 {- | Returns a list of the function symbols appearing on both sides of a 'Rule' and their arities (number of arguments).
 Removes duplicates and asserts that each function symbol name has at most one arity.
@@ -56,7 +58,7 @@ Right [Sig "f" 2]
 Left "A function symbol appears multiple times in signature ...
 -}
 ruleFunArities :: (Eq f) => Rule f v -> Either String [Sig f]
-ruleFunArities (Rule l r) = do
+ruleFunArities (Rule l r _) = do
   lhsArities <- termFunArities l
   rhsArities <- termFunArities r
   checkDistinctSig $ nub (lhsArities ++ rhsArities)
@@ -84,7 +86,13 @@ Duplicates are removed with 'nub'. Not very efficient, but it works.
 ["x", "y"]
 -}
 ruleVars :: Ord v => [Rule f v] -> [v]
-ruleVars rs = nubOrd $ concatMap (\(Rule l r) -> Term.vars l ++ Term.vars r) rs
+ruleVars rs = nubOrd $ concatMap (\(Rule l r _) -> Term.vars l ++ Term.vars r) rs
 
 ruleFuns :: Ord f => [Rule f v] -> [f]
 ruleFuns rs = nubOrd $ concatMap (\r -> Term.funs (lhs r) ++ Term.funs (rhs r)) rs
+
+mkRule :: Term f v -> Term f v -> Rule f v
+mkRule s t = Rule s t 1
+
+mkRuleWithCost :: Term f v -> Term f v -> Int -> Rule f v
+mkRuleWithCost = Rule

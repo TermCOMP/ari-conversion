@@ -16,7 +16,7 @@ where
 
 import TRSConversion.Formats.COPS.Parse.Term (parseTermFuns, parseTermVars)
 import TRSConversion.Formats.COPS.Parse.Utils (COPSParser, symbol)
-import TRSConversion.Problem.Common.Rule (Rule (..))
+import TRSConversion.Problem.Common.Rule (Rule (..), mkRule)
 import TRSConversion.Problem.MsTrs.MsSig (MsSig (..))
 import Text.Megaparsec (many)
 
@@ -37,7 +37,7 @@ parseCopsRule vs = do
   l <- parseTermVars vs
   _ <- symbol "->"
   r <- parseTermVars vs
-  return $ Rule{lhs = l, rhs = r}
+  return $ mkRule l r
 
 {- | Parser to extract the rules from a @RULES@ block of the [COPS TRS](http://project-coco.uibk.ac.at/problems/trs.php) format.
 Takes a 'TrsSig' and calls 'parseCopsRule' 0 or more times on the input until no more rules can be parsed.
@@ -73,4 +73,4 @@ parseCopsMsTrsRules msSigs = do many parseMsTrsCopsRule
     l <- parseTermFuns fsyms
     _ <- symbol "->"
     r <- parseTermFuns fsyms
-    return $ Rule{lhs = l, rhs = r}
+    return $ mkRule l r

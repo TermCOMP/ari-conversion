@@ -10,6 +10,7 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Text as Text
 import TPDB.Data (Funcsym)
 import Data.Maybe ( isNothing )
+import qualified TRSConversion.Problem.Common.Rule as Ari
 
 type SrcProblem = TPDB.Problem TPDB.Identifier TPDB.Identifier
 type SrcFunctionSymbol = Funcsym
@@ -33,7 +34,7 @@ convertProblem :: SrcProblem -> Either String DstProblem
 convertProblem p = do
     let src_trs = TPDB.trs p
     let src_signature = TPDB.full_signature p
-    let dst_rules = map convertRule $ TPDB.strict_rules src_trs
+    let dst_rules = map convertRule (TPDB.strict_rules src_trs) ++ map convertRelativeRule (TPDB.weak_rules src_trs)
     dst_signature <- convertSignature src_signature
     replacement_map <- convertReplacementMap src_signature
     let system = case replacement_map of
@@ -53,7 +54,10 @@ convertProblem p = do
         Ari.Problem.metaInfo = MetaInfo.emptyMetaInfo}
 
 convertRule :: SrcRule -> DstRule
-convertRule (lhs, rhs) = Ari.Rule (convertTerm lhs) (convertTerm rhs)
+convertRule (lhs, rhs) = Ari.mkRule (convertTerm lhs) (convertTerm rhs)
+
+convertRelativeRule :: SrcRule -> DstRule
+convertRelativeRule (lhs, rhs) = Ari.mkRuleWithCost (convertTerm lhs) (convertTerm rhs) 0
 
 convertTerm :: SrcTerm -> DstTerm
 convertTerm (TPDB.Var x) = Ari.Var $ Text.unpack (TPDB.name x)

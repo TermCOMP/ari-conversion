@@ -30,11 +30,12 @@ unparseCopsCSTrs :: (Ord v, Pretty f, Pretty v) => CSTrs f v -> Either String (D
 unparseCopsCSTrs cstrs
   | numSystems cstrs /= 1 = error "COPS format doesn't support CSTRSs with multiple systems"
   | otherwise = do
+      rs' <- mapM unparseCopsRule rs
       pure $
         vsep
           [ prettyBlock "VAR" (hsep [pretty v | v <- vs])
           , prettyBlock "REPLACEMENT-MAP" (nest 2 (hardline <> copsReplacementMap (replacementMap cstrs)) <> hardline)
-          , prettyBlock "RULES" (nest 2 (vsep $ mempty : [unparseCopsRule r | r <- rs]) <> hardline)
+          , prettyBlock "RULES" (nest 2 (vsep $ mempty : rs') <> hardline)
           ]
  where
   rs = rules cstrs IntMap.! 1
@@ -44,9 +45,10 @@ unparseCopsCSTrs cstrs
 
   varsOfRules r = vars (R.lhs r) ++ vars (R.rhs r)
 
-unparseCopsCsTRSRules :: (Pretty f, Pretty v) => [R.Rule f v] -> Doc ann
-unparseCopsCsTRSRules rs =
-  prettyBlock "RULES" (nest 2 (vsep $ mempty : [unparseCopsRule r | r <- rs]) <> hardline)
+unparseCopsCsTRSRules :: (Pretty f, Pretty v) => [R.Rule f v] -> Either String (Doc ann)
+unparseCopsCsTRSRules rs = do
+  rs' <- mapM unparseCopsRule rs
+  return $ prettyBlock "RULES" (nest 2 (vsep $ mempty : rs') <> hardline)
 
 copsReplacementMap :: Pretty f => ReplacementMap f -> Doc ann
 copsReplacementMap repMap =

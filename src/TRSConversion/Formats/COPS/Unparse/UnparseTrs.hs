@@ -30,6 +30,7 @@ unparseCopsTrs (Trs {rules = systemMap, signature = sig, numSystems = _}) = do
   let trsUnion = concat systemMap
   prettySystems <- forM (toList systemMap) $ \rs -> do
     copsSig <- unparseCopsTrsSig trsUnion sig
-    return $ vsep (filterEmptyDocs [copsSig, unparseCopsRules rs])
+    rs' <- unparseCopsRules rs
+    return $ vsep (filterEmptyDocs [copsSig, rs'])
   pure $ vsep prettySystems
 

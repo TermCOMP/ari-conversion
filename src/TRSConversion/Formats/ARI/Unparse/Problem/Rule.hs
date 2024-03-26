@@ -41,10 +41,11 @@ unparseAriRules index rs = vsep (map (unparseAriRule index) rs)
 -- >>> unparseAriRule $ Rule {lhs=Fun "f" [Var "x", Fun "g" [Var "y"]], rhs=Fun "g" [Var "y"]}
 -- (rule (f x (g y)) (g y))
 unparseAriRule :: (Pretty f, Pretty v) => Int -> Rule f v -> Doc ann
-unparseAriRule i (Rule l r) =
+unparseAriRule i (Rule l r c) =
   parens $
-    "rule" <+> unparsePrefixTerm l <+> unparsePrefixTerm r <>
-      if i > 1 then mempty <+> ":index" <+> pretty i else mempty
+    "rule" <+> unparsePrefixTerm l <+> unparsePrefixTerm r <+>
+      (if c /= 1 then mempty <+> ":cost" <+> pretty c else mempty) <>
+      (if i > 1 then mempty <+> ":index" <+> pretty i else mempty)
 
 
 -- $setup

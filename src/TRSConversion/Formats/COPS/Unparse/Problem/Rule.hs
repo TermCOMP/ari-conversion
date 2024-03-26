@@ -21,19 +21,25 @@ import TRSConversion.Unparse.Utils (prettyBlock)
 
 -- | Unparse a list of 'Rule's into the expected [COPS format](http://project-coco.uibk.ac.at/problems/trs.php)
 -- separated by newlines. Uses 'unparseCopsRule' to parse individual rules.
-unparseCopsRules :: (Pretty f, Pretty v) => [Rule f v] -> Doc ann
+unparseCopsRules :: (Pretty f, Pretty v) => [Rule f v] -> Either String (Doc ann)
 unparseCopsRules rs =
   if null rs
-    then prettyBlock "RULES" emptyDoc
-    else prettyBlock "RULES" $ vsep (emptyDoc : [indent 2 $ unparseCopsRule r | r <- rs] ++ [emptyDoc])
+    then Right $ prettyBlock "RULES" emptyDoc
+    else do
+      rules <- mapM (\r -> do
+        r' <- unparseCopsRule r
+        return $ indent 2 r') rs
+      Right $ prettyBlock "RULES" $ vsep (emptyDoc : rules ++ [emptyDoc])
 
 -- | Unparse a single COPS rule into format "lhs -> rhs" using function 'unparseTerm'
 -- on each side of the rule.
 --
 -- >>> unparseCopsRule $ Rule {lhs=Fun "f" [Var "x", Fun "a" []], rhs=Var "x"}
 -- f(x,a) -> x
-unparseCopsRule :: (Pretty f, Pretty v) => Rule f v -> Doc ann
-unparseCopsRule (Rule l r) = unparseTerm l <+> "->" <+> unparseTerm r
+unparseCopsRule :: (Pretty f, Pretty v) => Rule f v -> Either String (Doc ann)
+unparseCopsRule (Rule l r c)
+  | c /= 1 = Left "COPS does not support costs"
+  | otherwise = Right $ unparseTerm l <+> "->" <+> unparseTerm r
 
 -- $setup
 -- >>> import TRSConversion.Problem.Common.Term

@@ -27,9 +27,10 @@ import TRSConversion.Unparse.Utils (filterEmptyDocs)
 unparseCopsMsTrs :: (Pretty f, Pretty v, Pretty s) => MsTrs f v s -> Either String (Doc ann)
 unparseCopsMsTrs (MsTrs {rules = systems, signature = sig, numSystems = n, sorts = _})
   | n /= 1 = error "COPS format doesn't support MSTRSs with multiple systems"
-  | otherwise =
+  | otherwise = do
+      rs' <- unparseCopsRules rs
       return $
-        vsep (filterEmptyDocs [unparseCopsMsSig sig, unparseCopsRules rs])
+        vsep (filterEmptyDocs [unparseCopsMsSig sig, rs'])
   where
     rs = systems IntMap.! 1
 

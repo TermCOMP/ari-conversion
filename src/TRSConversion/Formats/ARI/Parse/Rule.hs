@@ -13,12 +13,13 @@ module TRSConversion.Formats.ARI.Parse.Rule (
 where
 
 import TRSConversion.Formats.ARI.Parse.Term (parsePrefixTerm)
-import TRSConversion.Formats.ARI.Parse.Utils (ARIParser, FunSymb, VarSymb, index, keyword, sExpr)
+import TRSConversion.Formats.ARI.Parse.Utils (ARIParser, FunSymb, VarSymb, index, keyword, sExpr, naturalNumber)
 import TRSConversion.Problem.Common.Index (Index)
 import qualified TRSConversion.Problem.Common.Index as Index
 import TRSConversion.Problem.Common.Rule (Rule (..))
 import TRSConversion.Problem.Trs.Sig ( Sig )
 import Text.Megaparsec (getOffset, option)
+import TRSConversion.Problem.Trs.Trs (mkRuleWithCost)
 
 {- | Parse a rule block consisting of two terms in prefix notation
 separated by at least one space character.
@@ -35,8 +36,9 @@ parseAriRule :: [Sig FunSymb] -> ARIParser (Index, Rule FunSymb VarSymb)
 parseAriRule funSig = sExpr "rule" $ do
   l <- term
   r <- term
+  c <- option 1 (keyword ":cost" >> naturalNumber)
   o <- getOffset
   n <- option (Index.Index 1 o) $ keyword ":index" >> index
-  return $ (n, Rule{lhs = l, rhs = r})
+  return (n, mkRuleWithCost l r c)
  where
   term = parsePrefixTerm funSig

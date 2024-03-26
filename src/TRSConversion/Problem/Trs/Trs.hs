@@ -15,12 +15,14 @@ module TRSConversion.Problem.Trs.Trs
     Sig (..),
     mapTrs,
     emptyTrs,
+    mkRule,
+    mkRuleWithCost
   )
 where
 
 import Data.IntMap (IntMap, empty)
 
-import TRSConversion.Problem.Common.Rule (Rule (..), mapRule)
+import TRSConversion.Problem.Common.Rule (Rule (..), mapRule, mkRule, mkRuleWithCost)
 import TRSConversion.Problem.Common.Term (Term (..))
 import TRSConversion.Problem.Trs.TrsSig (Sig (..), TrsSig (..))
 

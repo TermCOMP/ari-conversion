@@ -54,7 +54,7 @@ ruleToCRule :: Trs.Rule f v -> CRule f v
 ruleToCRule Trs.Rule{Trs.lhs = l, Trs.rhs = r} = CRule {lhs = l, rhs = r, conditions = []}
 
 cRuleToRule :: CRule f v -> Maybe (Trs.Rule f v)
-cRuleToRule CRule{lhs = l, rhs = r, conditions = []} = Just $ Trs.Rule {Trs.lhs = l, Trs.rhs = r}
+cRuleToRule CRule{lhs = l, rhs = r, conditions = []} = Just $ Trs.mkRule l r
 cRuleToRule _ = Nothing
 
 data CTrs f v = CTrs
