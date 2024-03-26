@@ -18,7 +18,7 @@ import TRSConversion.Formats.COPS.Parse.MSTrs (parseCopsMsTrs)
 import TRSConversion.Formats.COPS.Parse.MetaInfo (parseCopsMetaInfoBlock)
 import TRSConversion.Formats.COPS.Parse.Trs (parseCopsTrs)
 import TRSConversion.Formats.COPS.Parse.Utils (COPSParser)
-import TRSConversion.Problem.Common.MetaInfo (MetaInfo (..), emptyMetaInfo)
+import TRSConversion.Problem.Common.MetaInfo (emptyMetaInfo)
 import TRSConversion.Problem.Problem (Problem (Problem))
 import qualified TRSConversion.Problem.Problem as Prob
 import Text.Megaparsec (choice, option, try)
@@ -43,7 +43,7 @@ parseProblem =
 
 parseCOMProblem :: COPSParser (Problem String String String)
 parseCOMProblem = do
-  (copsComment, trs) <- parseCopsCom
+  (_, trs) <- parseCopsCom
   metaInfo <- option emptyMetaInfo parseCopsMetaInfoBlock
   pure $
     Problem
@@ -53,7 +53,7 @@ parseCOMProblem = do
 
 parseINFProblem :: COPSParser (Problem String String String)
 parseINFProblem = do
-  (copsComment, inf) <- parseCopsInfeasibility
+  (_, inf) <- parseCopsInfeasibility
   metaInfo <- option emptyMetaInfo parseCopsMetaInfoBlock
   pure $
     Problem
