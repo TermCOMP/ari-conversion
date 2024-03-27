@@ -16,7 +16,7 @@ import Prettyprinter (Doc, Pretty, hsep, parens, pretty, vsep, (<+>))
 import TRSConversion.Problem.CSCTrs.CSCTrs (CSCTrs (..))
 import TRSConversion.Problem.CSTrs.CSTrs (ReplacementMap)
 import TRSConversion.Problem.CTrs.CTrs (CTrs (..))
-import TRSConversion.Problem.Trs.TrsSig (Sig (..), TrsSig (..))
+import TRSConversion.Problem.Trs.TrsSig (Sig (..), TrsSig (..), Theory (None))
 import TRSConversion.Formats.ARI.Unparse.CTrs (prettyAriConditionType, unparseAriCSystems)
 import TRSConversion.Unparse.Utils (filterEmptyDocs)
 
@@ -31,10 +31,13 @@ unparseAriCSCTrs CSCTrs{ctrs = system, replacementMap = repMap} = do
   return $ vsep (filterEmptyDocs trsElements)
 
 unparseAriCSCTrsSig :: (Ord f, Pretty f) => TrsSig f -> ReplacementMap f -> Either String (Doc ann)
-unparseAriCSCTrsSig (FunSig fs) repMap = Right (vsep $ map prettySigLine fs)
+unparseAriCSCTrsSig (FunSig fs) repMap = do
+  fs' <- mapM prettySigLine fs
+  return $ vsep fs'
  where
   repMapM = M.fromList repMap
   prettyM = M.map (\ints -> mempty <+> ":replacement-map" <+> (parens . hsep $ map pretty ints)) repMapM
 
-  prettySigLine (Sig f a) = parens $ "fun" <+> pretty f <+> pretty a <> M.findWithDefault mempty f prettyM
+  prettySigLine (Sig {fsym=f, arity=a, theory=None}) = Right $ parens $ "fun" <+> pretty f <+> pretty a <> M.findWithDefault mempty f prettyM
+  prettySigLine _ = Left $ "Equational CSCTrss are not yet supported"
 

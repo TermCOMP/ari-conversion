@@ -1,5 +1,7 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module TRSConversion.Formats.XTC.Unparse.Problem (unparse) where
 
+import qualified TRSConversion.Problem.Trs.Sig as Ari
 import qualified TRSConversion.Problem.Trs.Trs as Ari
 import qualified TRSConversion.Problem.CSTrs.CSTrs as Ari.CSTrs
 import qualified TRSConversion.Problem.Problem as Ari.Problem
@@ -11,6 +13,7 @@ import qualified TPDB.XTC as XTC
 import Data.IntMap ((!))
 import qualified Prettyprinter (Doc, pretty)
 import Data.Foldable (find)
+import TRSConversion.Problem.Trs.Sig (Sig(..))
 
 type SrcProblem = Ari.Problem.Problem String String String
 type SrcSignature = Ari.TrsSig String
@@ -18,6 +21,7 @@ type SrcRule = Ari.Rule String String
 type SrcTerm = Ari.Term String String
 type SrcFunctionSymbol = Ari.Sig String
 type SrcReplacementMap = Ari.CSTrs.ReplacementMap String
+type SrcTheory = Ari.Theory
 
 type DstProblem = TPDB.Problem TPDB.Identifier TPDB.Identifier
 type DstTrs = TPDB.TRS TPDB.Identifier TPDB.Identifier
@@ -25,6 +29,7 @@ type DstFunctionSymbol = TPDB.Funcsym
 type DstSignature = TPDB.Signature
 type DstTerm = TPDB.Term TPDB.Identifier TPDB.Identifier
 type DstRule = TPDB.Rule DstTerm
+type DstTheory = TPDB.Theory
 
 unparse :: SrcProblem -> Either String (Prettyprinter.Doc ann)
 unparse src_problem = do
@@ -88,11 +93,18 @@ convertSignature :: Maybe SrcReplacementMap -> SrcSignature -> DstSignature
 convertSignature rm (Ari.FunSig src_fs) = TPDB.Signature $ map (convertFunctionSymbol rm) src_fs
 
 convertFunctionSymbol :: Maybe SrcReplacementMap -> SrcFunctionSymbol -> DstFunctionSymbol
-convertFunctionSymbol rm (Ari.Sig name arity) =  TPDB.Funcsym {
-    TPDB.fs_name = Text.pack name,
+convertFunctionSymbol rm (Ari.Sig {fsym, arity, theory}) =  TPDB.Funcsym {
+    TPDB.fs_name = Text.pack fsym,
     TPDB.fs_arity = arity,
-    TPDB.fs_theory = Nothing,
-    TPDB.fs_replacementmap = getReplacementMap rm name}
+    TPDB.fs_theory = convertTheory theory,
+    TPDB.fs_replacementmap = getReplacementMap rm fsym}
+
+convertTheory :: SrcTheory -> Maybe DstTheory
+convertTheory t = case t of
+    Ari.A -> Just TPDB.A
+    Ari.C -> Just TPDB.C
+    Ari.AC -> Just TPDB.AC
+    Ari.None -> Nothing
 
 getReplacementMap :: Maybe SrcReplacementMap -> String -> Maybe (TPDB.Replacementmap)
 getReplacementMap replacement_map name = do

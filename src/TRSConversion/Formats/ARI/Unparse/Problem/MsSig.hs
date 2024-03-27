@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Formats.ARI.Unparse.Problem.MsSig
 -- Description : Unparser for MsSig
@@ -14,6 +15,7 @@ import Prettyprinter (Doc, Pretty, hsep, parens, pretty, vsep, (<+>))
 
 import TRSConversion.Problem.MsTrs.MsSig (MsSig (..))
 import TRSConversion.Unparse.Utils (prettyBlock)
+import TRSConversion.Problem.Trs.TrsSig (Theory(..))
 
 -- | Pretty print a an 'MsSig' in [ARI format](https://ari-informatik.uibk.ac.at/tasks/A/mstrs.txt).
 --
@@ -25,10 +27,10 @@ unparseAriMsSig :: (Pretty f, Pretty s) => [MsSig f s] -> Doc ann
 unparseAriMsSig = vsep . map (prettyBlock "fun" . prettyAriMsSig)
   where
     prettyAriMsSig :: (Pretty f, Pretty s) => MsSig f s -> Doc ann
-    prettyAriMsSig (MsSig fsym (inSorts, outSort)) =
-      hsep
-        [ pretty fsym,
+    prettyAriMsSig (MsSig {funsym, sort=(inSorts, outSort), theory}) =
+      hsep $
+        [ pretty funsym,
           if null inSorts
           then pretty outSort
           else parens ("->" <+> hsep [pretty s | s <- inSorts] <+> pretty outSort)
-        ]
+        ] ++ ([parens $ ":theory" <+> pretty (show theory) | theory /= None])

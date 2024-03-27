@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : TRSConversion.Parse.Problem.MsSig
@@ -16,6 +17,7 @@ where
 import TRSConversion.Formats.COPS.Parse.Utils (COPSParser, ident, parens, symbol)
 import TRSConversion.Problem.MsTrs.MsSig (MsSig (..))
 import Text.Megaparsec (many, (<?>))
+import TRSConversion.Problem.Trs.Sig (Theory(..))
 
 {- | Parser to extract the signature from a @SIG@ block of the COPS [MSTRS format](http://project-coco.uibk.ac.at/problems/mstrs.php).
 Expects a sequence of blocks @(fsym  t1 ... tn -> t)@ where @t1@, ..., @tn@ are the input sorts of the function
@@ -43,8 +45,8 @@ MsSig "cons" (["Nat","List"], "List")
 -}
 parseCopsMsSig :: COPSParser (MsSig String String)
 parseCopsMsSig = do
-  fsym <- ident <?> "MsSig function symbol"
+  funsym <- ident <?> "MsSig function symbol"
   inputSorts <- many ident
   _ <- symbol "-> "
   outputSort <- ident
-  return $ MsSig fsym (inputSorts, outputSort)
+  return $ MsSig {funsym, sort=(inputSorts, outputSort), theory=None}

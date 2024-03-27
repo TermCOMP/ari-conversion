@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : TRSConversion.Parse.Problem.MsSig
@@ -22,6 +23,7 @@ import Text.Megaparsec (getOffset, registerParseError, some, (<|>))
 import qualified Text.Megaparsec.Error as E
 import Data.Text (unpack)
 import TRSConversion.Parse.Utils (tokenText)
+import TRSConversion.Formats.ARI.Parse.Sig (parseTheory)
 
 {- | Parser to extract the signature from a single @fun@ block of the ARI [MSTRS format](https://ari-informatik.uibk.ac.at/tasks/A/mstrs.txt).
 Expects a block like @fsym :sort (t1 ... tn t0)@ where the @t1@, ..., @tn@ are the input sorts of
@@ -37,9 +39,10 @@ MsSig "0" ([], "Nat")
 -}
 parseAriMsSig :: Set SortSymb -> ARIParser (MsSig FunSymb SortSymb)
 parseAriMsSig declaredSorts = sExpr "fun" $ do
-  fsym <- ident
+  funsym <- ident
   sorts <- sortP declaredSorts
-  return $ MsSig fsym (init sorts, last sorts)
+  theory <- parseTheory
+  return $ MsSig {funsym, sort=(init sorts, last sorts), theory}
 
 sortP :: Set SortSymb -> ARIParser [SortSymb]
 sortP declaredSorts =

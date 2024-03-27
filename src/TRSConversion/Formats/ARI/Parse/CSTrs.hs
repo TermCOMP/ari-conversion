@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : Data.Conversion.Formats.ARI.Parse.CSTrs
@@ -21,6 +22,7 @@ import qualified TRSConversion.Problem.Common.Index as Idx
 import Control.Monad
 import qualified Data.Set as Set
 import TRSConversion.Parse.Utils (Token)
+import TRSConversion.Formats.ARI.Parse.Sig (parseTheory)
 
 parseAriCSTrs :: ARIParser (CSTrs FunSymb VarSymb)
 parseAriCSTrs = pFormat >>= parseAriCSTrs'
@@ -48,10 +50,11 @@ pSignatureReplacementMap =
 
 pSigRep :: ARIParser (Sig FunSymb, ReplacementMap FunSymb)
 pSigRep = do
-  funSymb <- ident
+  fsym <- ident
   arity <- naturalNumber
-  repMap <- option [] ((: []) <$> pReplacementMap funSymb arity)
-  pure (Sig funSymb arity, repMap)
+  theory <- parseTheory
+  repMap <- option [] ((: []) <$> pReplacementMap fsym arity)
+  pure (Sig {fsym, arity, theory}, repMap)
  where
 
   pReplacementMap :: Token String -> Int -> ARIParser (FunSymb, [Int])

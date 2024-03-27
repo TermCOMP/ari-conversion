@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : TRSConversion.Parse.Problem.Term
@@ -47,7 +48,7 @@ Fun "f" [Var "x", Fun "g" [Fun "x" []]]
 parsePrefixTerm :: [Sig FunSymb] -> ARIParser (Term FunSymb VarSymb)
 parsePrefixTerm funSig = parseTerm
   where
-    mp = M.fromList [(f, arity) | Sig f arity <- funSig]
+    mp = M.fromList [(fsym, arity) | Sig {fsym, arity} <- funSig]
 
     parseTerm = fun <|> constantOrVar
     -- <|> parens parseT -- how about redundant parenthesis?

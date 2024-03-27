@@ -157,7 +157,7 @@ uniqueSymbols :: [Trs.Sig FunSymb] -> Result String
 uniqueSymbols = go Set.empty
   where
     go _ [] = Succeed
-    go st (Trs.Sig f _ : xs)
+    go st (Trs.Sig {Trs.fsym=f} : xs)
         | f `Set.member` st =
             let errMsg = "the function symbol is declared multiple times"
              in Fail (Just (errInfoFromToken f errMsg)) errMsg
@@ -210,7 +210,7 @@ checkMSSignature :: [MsTrs.MsSig FunSymb SortSymb] -> Result String
 checkMSSignature = go Set.empty
   where
     go _ [] = Succeed
-    go st (MsTrs.MsSig f _ : xs)
+    go st (MsTrs.MsSig {MsTrs.funsym=f} : xs)
         | f `Set.member` st =
             let errMsg = "function symbol is declared multiple times"
              in Fail (Just (errInfoFromToken f errMsg)) errMsg

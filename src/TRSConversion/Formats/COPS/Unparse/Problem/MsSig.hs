@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Formats.COPS.Unparse.Problem.MsSig
 -- Description : Unparser for MsSig
@@ -28,11 +29,11 @@ unparseCopsMsSig msSigs =
   where
     -- Pretty print a single 'MsSig'
     prettyCopsMsSig :: (Pretty f, Pretty s) => MsSig f s -> Doc ann
-    prettyCopsMsSig (MsSig fsym (inSorts, outSort)) =
+    prettyCopsMsSig (MsSig {funsym, sort=(inSorts, outSort)}) =
       parens $
         hsep
           ( filterEmptyDocs
-              [ pretty fsym,
+              [ pretty funsym,
                 if null inSorts then emptyDoc else hsep $ map pretty inSorts,
                 "->",
                 pretty outSort

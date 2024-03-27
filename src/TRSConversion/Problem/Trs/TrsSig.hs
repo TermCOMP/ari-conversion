@@ -11,10 +11,11 @@ module TRSConversion.Problem.Trs.TrsSig
 
     -- * Re-exports
     Sig (..),
+    Theory (..)
   )
 where
 
-import TRSConversion.Problem.Trs.Sig (Sig (..))
+import TRSConversion.Problem.Trs.Sig (Sig (..), Theory (..))
 
 -- | Datatype for the signature of a general first-order TRS.
 -- Defined this way as the signature can be given in one of 3 ways in a TRS definition:

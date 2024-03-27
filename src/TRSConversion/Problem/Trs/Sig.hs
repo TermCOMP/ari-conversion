@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Problem.Trs.Sig
 -- Description : TRS signature type definition
@@ -9,6 +10,7 @@
 module TRSConversion.Problem.Trs.Sig
   ( -- * Untyped Signature datatype
     Sig (..),
+    Theory (..),
 
     -- * Helper functions
     checkDistinctSig,
@@ -18,15 +20,20 @@ where
 import Data.List (nub)
 import Prettyprinter (Pretty, pretty, (<+>))
 
+data Theory = None | A | C | AC
+  deriving (Eq, Ord, Show)
+
 -- | Datatype for the signature of a single function symbol.
 --
 -- For example, a function symbol @f@ of arity 2 can be written as @Sig "f" 2@.
 data Sig f
   = Sig
-      f
-      -- ^ The function symbol
-      Int
-      -- ^ The arity of the function symbol (a non-negative integer)
+  { fsym :: f
+    -- ^ The function symbol
+  , arity :: Int
+    -- ^ The arity of the function symbol (a non-negative integer)
+  , theory :: Theory
+  }
   deriving (Eq, Ord, Show, Functor)
 
 -- | Checks that each function symbol appears at most once in a list of 'Sig's and returns the
@@ -40,7 +47,7 @@ data Sig f
 -- Left "A function symbol appears multiple times in signature...
 checkDistinctSig :: (Eq f) => [Sig f] -> Either String [Sig f]
 checkDistinctSig sig =
-  if distinct $ foldr (\(Sig fsym _) -> (fsym :)) [] sig
+  if distinct $ foldr (\(Sig {fsym}) -> (fsym :)) [] sig
     then Right sig
     else Left $ "A function symbol appears multiple times in signature"
   where
@@ -49,4 +56,6 @@ checkDistinctSig sig =
 
 -- | Make 'Sig' an instance of @Pretty@
 instance (Pretty f) => Pretty (Sig f) where
-  pretty (Sig fsym arity) = pretty fsym <+> pretty arity
+  pretty (Sig {fsym, arity, theory}) =
+    let res = pretty fsym <+> pretty arity in
+    if theory == None then res else res <+> pretty (show theory)

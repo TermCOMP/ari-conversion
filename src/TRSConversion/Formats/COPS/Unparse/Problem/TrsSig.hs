@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Formats.COPS.Unparse.Problem.TrsSig
 -- Description : Unparser for TrsSig
@@ -42,7 +43,7 @@ import TRSConversion.Unparse.Utils (prettyBlock)
 --   function symbols, consistency with rules, etc. This should be done separately.
 unparseCopsTrsSig :: (Ord f, Ord v, Pretty f, Pretty v) => [Rule f v] -> TrsSig f -> Either String (Doc ann)
 unparseCopsTrsSig rs (FunSig fs)
-    | Set.fromList [f | Sig f _ <- fs] `Set.isSubsetOf` Set.fromList (Rule.ruleFuns rs)
+    | Set.fromList [fsym | Sig {fsym} <- fs] `Set.isSubsetOf` Set.fromList (Rule.ruleFuns rs)
       = Right $ prettyVars variables
     | otherwise = Right $ vsep [prettyNonEmptyVars variables, prettyCopsSig fs]
   where

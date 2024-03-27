@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Problem.MsTrs.MsSig
 -- Description : Type definition for MSTRS signature
@@ -15,6 +16,7 @@ where
 
 import Prelude hiding (map)
 import Data.List (nub)
+import TRSConversion.Problem.Trs.Sig (Theory)
 
 -- | Datatype for the signature of a single function symbol in a many-sorted TRS ('MsTrs').
 --
@@ -24,18 +26,19 @@ import Data.List (nub)
 --  > MsSig "n" ([], "Nat").
 data MsSig f s
   = MsSig
-      f
+    { funsym :: f
       -- ^ The function symbol
-      ([s], s)
+    , sort :: ([s], s)
       -- ^ A list of the input sorts and the single output sorts of the function symbol
+    , theory :: Theory}
   deriving (Eq, Show)
 
 map :: (f -> f') -> (s -> s') -> MsSig f s -> MsSig f' s'
-map f s (MsSig g (args,res)) = MsSig (f g) (fmap s args, s res)
+map f s (MsSig {funsym=g, sort=(args,res), theory}) = MsSig {funsym=(f g), sort=(fmap s args, s res), theory}
 
 -- | Function to infer a list of all unique sorts in an 'MsSig'.
 --
 -- >>> inferSorts [MsSig "cons" (["Nat","List"] "List"), MsSig "treeList" (["Tree"] "List")]
 -- ["Nat", "List", "Tree"]
 inferSorts :: Eq s => [MsSig f s] -> [s]
-inferSorts = nub . concatMap (\(MsSig _ (inSorts, outSort)) -> outSort : inSorts)
+inferSorts = nub . concatMap (\(MsSig {sort=(inSorts, outSort)}) -> outSort : inSorts)

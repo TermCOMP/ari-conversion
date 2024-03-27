@@ -1,5 +1,6 @@
 module TRSConversion.Formats.XTC.Parse.Problem (parse) where
 
+import qualified TRSConversion.Problem.Trs.Sig as Ari
 import qualified TRSConversion.Problem.Trs.Trs as Ari
 import qualified TRSConversion.Problem.Problem as Ari.Problem
 import qualified TRSConversion.Problem.CSTrs.CSTrs as Ari.CSTrs
@@ -10,13 +11,13 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Text as Text
 import TPDB.Data (Funcsym)
 import Data.Maybe ( isNothing )
-import qualified TRSConversion.Problem.Common.Rule as Ari
 
 type SrcProblem = TPDB.Problem TPDB.Identifier TPDB.Identifier
 type SrcFunctionSymbol = Funcsym
 type SrcSignature = TPDB.Signature
 type SrcRule = (SrcTerm, SrcTerm)
 type SrcTerm = TPDB.Term TPDB.Identifier TPDB.Identifier
+type SrcTheory = TPDB.Theory
 
 type DstProblem = Ari.Problem.Problem String String String
 type DstSignature = Ari.TrsSig String
@@ -24,6 +25,7 @@ type DstRule = Ari.Rule String String
 type DstTerm = Ari.Term String String
 type DstFunctionSymbol = Ari.Sig String
 type DstReplacementMap = Ari.CSTrs.ReplacementMap String
+type DstTheory = Ari.Theory
 
 parse :: FilePath -> IO (Either String DstProblem)
 parse f = do
@@ -68,7 +70,18 @@ convertSignature (TPDB.Signature fs) = Right $ Ari.FunSig $ map convertFunctionS
 convertSignature TPDB.HigherOrderSignature = Left "higher order is not yet supported"
 
 convertFunctionSymbol :: SrcFunctionSymbol -> DstFunctionSymbol
-convertFunctionSymbol f = Ari.Sig (Text.unpack $ TPDB.fs_name f) (TPDB.fs_arity f)
+convertFunctionSymbol f = Ari.Sig {
+    Ari.fsym = Text.unpack $ TPDB.fs_name f,
+    Ari.arity = TPDB.fs_arity f,
+    Ari.theory = convertTheory $ TPDB.fs_theory f
+}
+
+convertTheory :: Maybe SrcTheory -> DstTheory
+convertTheory Nothing = Ari.None
+convertTheory (Just t) = case t of
+    TPDB.A -> Ari.A
+    TPDB.C -> Ari.C
+    TPDB.AC -> Ari.AC
 
 convertReplacementMap :: SrcSignature -> Either String (Maybe DstReplacementMap)
 convertReplacementMap (TPDB.Signature fs) = Right $

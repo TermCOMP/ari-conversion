@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Parse.Problem.Sig
 -- Description : TRS signature parsers
@@ -9,7 +10,7 @@ module TRSConversion.Formats.COPS.Parse.Sig
   )
 where
 
-import TRSConversion.Problem.Trs.Sig (Sig (..))
+import TRSConversion.Problem.Trs.Sig (Sig (..), Theory (..))
 import Text.Megaparsec (many, takeWhile1P, (<?>))
 import Data.Char (isDigit)
 import TRSConversion.Formats.COPS.Parse.Utils (COPSParser, parens, lexeme, ident)
@@ -32,7 +33,10 @@ parseCopsSig = many (parens parseFsymArity)
 -- >>> parseTest parseCopsSig "fun 2"
 -- Right (Sig "fun" 2)
 parseFsymArity :: COPSParser (Sig String)
-parseFsymArity = Sig <$> ident <*> naturalNumber
+parseFsymArity = do
+  fsym <- ident
+  arity <- naturalNumber
+  return Sig {fsym, arity, theory=None}
 
 naturalNumber :: COPSParser Int
 naturalNumber =

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : TRSConversion.Formats.COPS.Parse.Rule
@@ -67,7 +68,7 @@ See the tests for examples.
 parseCopsMsTrsRules :: [MsSig String String] -> COPSParser [Rule String String]
 parseCopsMsTrsRules msSigs = do many parseMsTrsCopsRule
  where
-  fsyms = map (\(MsSig fsym _) -> fsym) msSigs
+  fsyms = map (\(MsSig {funsym}) -> funsym) msSigs
   parseMsTrsCopsRule :: COPSParser (Rule String String)
   parseMsTrsCopsRule = do
     l <- parseTermFuns fsyms

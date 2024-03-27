@@ -15,7 +15,7 @@ module TRSConversion.Problem.Common.Term
 where
 
 import Prelude hiding (map)
-import TRSConversion.Problem.Trs.Sig (Sig (..), checkDistinctSig)
+import TRSConversion.Problem.Trs.Sig (Sig (..), Theory (..), checkDistinctSig)
 import Data.List (nub)
 
 -- | The type for a term with function symbol type @f@ and variable type @v@.
@@ -50,7 +50,7 @@ termFunArities t = checkDistinctSig $ nub arities
     foldTerm :: (v -> a) -> (f -> [a] -> a) -> Term f v -> a
     foldTerm var _ (Var v) = var v
     foldTerm var fun (Fun f ts) = fun f (fmap (foldTerm var fun) ts)
-    arities = foldTerm (const id) (\f xs -> (Sig f (length xs) :) . foldr (.) id xs) t []
+    arities = foldTerm (const id) (\f xs -> (Sig {fsym=f, arity=length xs, theory=None} :) . foldr (.) id xs) t []
 
 vars :: Term f v -> [v]
 vars (Var v) = [v]

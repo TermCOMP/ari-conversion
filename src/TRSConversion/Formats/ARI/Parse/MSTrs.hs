@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : TRSConversion.Formats.ARI.Parse.MsTrs
@@ -20,8 +21,9 @@ import Text.Megaparsec (many, option)
 import TRSConversion.Formats.ARI.Parse.MsSig (parseAriMsSig)
 import TRSConversion.Formats.ARI.Parse.Trs (parseSystems)
 import TRSConversion.Formats.ARI.Parse.Utils (ARIParser, keyword, sExpr, naturalNumber, restrictedIdent, FunSymb, VarSymb, SortSymb)
-import TRSConversion.Problem.MsTrs.MsTrs (MsSig (..), MsTrs (..))
-import TRSConversion.Problem.Trs.Sig (Sig (..))
+import TRSConversion.Problem.MsTrs.MsTrs as MsTrs
+    ( MsSig(..), MsTrs(..) )
+import TRSConversion.Problem.Trs.Sig as Sig ( Sig(..) )
 
 {- | Parse a many-sorted TRS in the provisional [ARI format](https://ari-informatik.uibk.ac.at/tasks/A/mstrs.txt).
 
@@ -51,7 +53,7 @@ parseAriMsTrs' numSys = do
       }
  where
   msSigToSigList :: [MsSig FunSymb SortSymb] -> [Sig FunSymb]
-  msSigToSigList = map (\(MsSig fsym (inputSorts, _)) -> Sig fsym (length inputSorts))
+  msSigToSigList = map (\(MsSig {funsym=f, sort=(inputSorts, _), MsTrs.theory=t}) -> Sig {fsym=f, arity=(length inputSorts), Sig.theory=t})
 
 pFormat :: Text -> ARIParser Int
 pFormat name = sExpr "format" $ do

@@ -18,7 +18,7 @@ import Data.Foldable (foldl')
 import Data.IntMap (IntMap)
 import qualified Data.Map.Strict as M
 import TRSConversion.Problem.Common.Term (Term (..))
-import TRSConversion.Problem.Trs.Sig (Sig (..))
+import TRSConversion.Problem.Trs.Sig (Sig (..), Theory (..))
 import TRSConversion.Problem.Trs.TrsSig (TrsSig)
 import qualified TRSConversion.Problem.Common.Term as Term
 import Data.Containers.ListUtils (nubOrd)
@@ -92,7 +92,7 @@ orientedCTrsToTrs CTrs {rules = rs, signature = sig, numSystems = n, conditionTy
                      }
 
 inferSigFromRules :: Ord f => [CRule f v] -> Either String [Sig f]
-inferSigFromRules ctrs = M.foldrWithKey (\f a acc -> Sig f a : acc) [] <$> resM
+inferSigFromRules ctrs = M.foldrWithKey (\f a acc -> Sig {fsym=f, arity=a, theory=None} : acc) [] <$> resM
   where
     terms r = lhs r : rhs r : concatMap termsC (conditions r)
     termsC (t1 :== t2) = [t1, t2]

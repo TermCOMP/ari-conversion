@@ -4,6 +4,7 @@ Description : Rule type and helpers
 
 This module contains the 'Rule' type definition to represent rewriting rules and helper functions for Rules.
 -}
+{-# LANGUAGE NamedFieldPuns #-}
 module TRSConversion.Problem.Common.Rule (
   -- * Types
   Rule (..),
@@ -58,9 +59,9 @@ Right [Sig "f" 2]
 Left "A function symbol appears multiple times in signature ...
 -}
 ruleFunArities :: (Eq f) => Rule f v -> Either String [Sig f]
-ruleFunArities (Rule l r _) = do
-  lhsArities <- termFunArities l
-  rhsArities <- termFunArities r
+ruleFunArities (Rule {lhs, rhs}) = do
+  lhsArities <- termFunArities lhs
+  rhsArities <- termFunArities rhs
   checkDistinctSig $ nub (lhsArities ++ rhsArities)
 
 {- | Infer a signature from a list of rules by applying 'ruleFunArities' to each rule and then
@@ -86,7 +87,7 @@ Duplicates are removed with 'nub'. Not very efficient, but it works.
 ["x", "y"]
 -}
 ruleVars :: Ord v => [Rule f v] -> [v]
-ruleVars rs = nubOrd $ concatMap (\(Rule l r _) -> Term.vars l ++ Term.vars r) rs
+ruleVars rs = nubOrd $ concatMap (\(Rule {lhs, rhs}) -> Term.vars lhs ++ Term.vars rhs) rs
 
 ruleFuns :: Ord f => [Rule f v] -> [f]
 ruleFuns rs = nubOrd $ concatMap (\r -> Term.funs (lhs r) ++ Term.funs (rhs r)) rs

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Formats.ARI.Unparse.Problem.TrsSig
 -- Description : Unparser for TrsSig
@@ -19,7 +20,7 @@ where
 import Prettyprinter (Doc, Pretty, parens, pretty, vsep, (<+>))
 
 import TRSConversion.Problem.Common.Rule (Rule)
-import TRSConversion.Problem.Trs.TrsSig (Sig (..), TrsSig (..))
+import TRSConversion.Problem.Trs.TrsSig (Sig (..), TrsSig (..), Theory(..))
 
 -- | Pretty print a 'TrsSig' in [ARI format](https://ari-informatik.uibk.ac.at/tasks/A/trs.txt).
 --   @Right doc@ indicates a success, and @Left err@ indicates an error due to being unable to deduce the signature from
@@ -42,4 +43,7 @@ unparseAriTrsSig _ (FunSig fs) = Right (unparseAriSigs fs)
 
 
 unparseAriSigs :: Pretty f => [Sig f] -> Doc ann
-unparseAriSigs sigs = vsep $ map (\(Sig f a) -> parens $ "fun" <+> pretty f <+> pretty a) sigs
+unparseAriSigs sigs = vsep $ map (\(Sig {fsym, arity, theory}) ->
+    let res = "fun" <+> pretty fsym <+> pretty arity in
+    parens (if theory == None then res else res <+> parens (":theory" <+> pretty (show theory)))
+  ) sigs

@@ -66,10 +66,11 @@ signatureToNodes :: (Pretty f) => TrsSig f -> [Node]
 signatureToNodes (FunSig sig) =
   [xml|
 <signature>
-  $forall Sig f n <- sig
+  $forall Sig {fsym, arity, theory} <- sig
     <symbol>
-      <name>#{pack (show (pretty f))}
-      <arity>#{pack (show n)}
+      <name>#{pack (show (pretty fsym))}
+      <arity>#{pack (show arity)}
+      <theory>#{pack (show theory)}
 |]
 
 ruleToNodes :: (Pretty f, Pretty v) => Rule f v -> [Node]
