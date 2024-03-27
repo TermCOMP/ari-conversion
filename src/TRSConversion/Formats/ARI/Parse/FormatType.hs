@@ -30,7 +30,7 @@ parseFormatType =
         o <- getOffset
         name <- ident
         ftype <- case tokenValue name of
-            "TRS" -> try infeasibilityTrsFormat <|> trsFormat
+            x | x == "TRS" || x == "ETRS" -> try infeasibilityTrsFormat <|> trsFormat
             "MSTRS" -> msTrsFormat
             "LCTRS" -> lcTrsFormat
             "CTRS" -> try infeasibilityCTrsFormat <|> cTrsFormat

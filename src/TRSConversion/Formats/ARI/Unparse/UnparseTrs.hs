@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module      : TRSConversion.Formats.ARI.Unparse.UnparseTrs
 -- Description : Unparser for TRSs
@@ -12,10 +13,11 @@ where
 
 import Prettyprinter (Doc, Pretty, parens, pretty, vsep, (<+>))
 
-import TRSConversion.Problem.Trs.Trs (Trs (..))
+import TRSConversion.Problem.Trs.Trs (Trs (..), TrsSig (..), Sig (..))
 import TRSConversion.Formats.ARI.Unparse.Problem.Rule (unparseAriSystems)
 import TRSConversion.Formats.ARI.Unparse.Problem.TrsSig (unparseAriTrsSig)
 import TRSConversion.Unparse.Utils (filterEmptyDocs)
+import TRSConversion.Problem.Trs.Sig ( Theory(..) )
 
 -- | Unparse a first-order TRS from the Haskell 'Trs' representation into
 -- [ARI format](https://ari-informatik.uibk.ac.at/tasks/A/trs.txt).
@@ -25,10 +27,12 @@ import TRSConversion.Unparse.Utils (filterEmptyDocs)
 --
 -- See the tests for examples of expected output.
 unparseAriTrs :: (Pretty f, Pretty v) => Trs f v -> Either String (Doc ann)
-unparseAriTrs (Trs {rules = rs, signature = sig, numSystems = n}) = do
-  ariSig <- unparseAriTrsSig (concat rs) sig
+unparseAriTrs (Trs {rules = rs, signature = FunSig sig, numSystems = n}) = do
+  ariSig <- unparseAriTrsSig (concat rs) (FunSig sig)
+  let equational = any (\Sig {theory} -> theory /= None) sig
+  let format = if equational then "ETRS" else "TRS"
   let trsElements =
-        [ parens $ "format" <+> "TRS" <> if n > 1 then mempty <+> ":number" <+> pretty n else mempty,
+        [ parens $ "format" <+> format <> if n > 1 then mempty <+> ":number" <+> pretty n else mempty,
           ariSig,
           unparseAriSystems rs
         ]
