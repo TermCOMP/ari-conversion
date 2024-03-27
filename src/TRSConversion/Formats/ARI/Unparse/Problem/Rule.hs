@@ -43,7 +43,7 @@ unparseAriRules index rs = vsep (map (unparseAriRule index) rs)
 unparseAriRule :: (Pretty f, Pretty v) => Int -> Rule f v -> Doc ann
 unparseAriRule i (Rule l r c) =
   parens $
-    "rule" <+> unparsePrefixTerm l <+> unparsePrefixTerm r <+>
+    "rule" <+> unparsePrefixTerm l <+> unparsePrefixTerm r <>
       (if c /= 1 then mempty <+> ":cost" <+> pretty c else mempty) <>
       (if i > 1 then mempty <+> ":index" <+> pretty i else mempty)
 
