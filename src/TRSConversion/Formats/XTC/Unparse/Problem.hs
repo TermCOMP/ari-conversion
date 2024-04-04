@@ -3,7 +3,10 @@ module TRSConversion.Formats.XTC.Unparse.Problem (unparse) where
 
 import qualified TRSConversion.Problem.Trs.Sig as Ari
 import qualified TRSConversion.Problem.Trs.Trs as Ari
+import qualified TRSConversion.Problem.CTrs.CTrs as Ari.CTrs
+import TRSConversion.Problem.CTrs.CTrs (Condition((:==)))
 import qualified TRSConversion.Problem.CSTrs.CSTrs as Ari.CSTrs
+import qualified TRSConversion.Problem.CSCTrs.CSCTrs as Ari.CSCTrs
 import qualified TRSConversion.Problem.Problem as Ari.Problem
 import qualified TPDB.Data as TPDB
 import qualified TPDB.Data.Attributes as TPDB
@@ -18,6 +21,7 @@ import TRSConversion.Problem.Trs.Sig (Sig(..))
 type SrcProblem = Ari.Problem.Problem String String String
 type SrcSignature = Ari.TrsSig String
 type SrcRule = Ari.Rule String String
+type SrcCRule = Ari.CTrs.CRule String String
 type SrcTerm = Ari.Term String String
 type SrcFunctionSymbol = Ari.Sig String
 type SrcReplacementMap = Ari.CSTrs.ReplacementMap String
@@ -42,17 +46,29 @@ convertProblem p =
         Ari.Problem.Trs src_trs ->
             let src_rules = Ari.rules src_trs ! 1
                 src_signature = Ari.signature src_trs in
-            buildProblem src_signature Nothing src_rules
+            buildProblem src_signature Nothing src_rules []
         Ari.Problem.CSTrs src_trs ->
             let src_rules = Ari.CSTrs.rules src_trs ! 1
                 replacement_map = Ari.CSTrs.replacementMap src_trs
                 src_signature = Ari.CSTrs.signature src_trs in
-            buildProblem src_signature (Just replacement_map) src_rules
+            buildProblem src_signature (Just replacement_map) src_rules []
+        Ari.Problem.CTrs src_trs ->
+            let src_rules = Ari.CTrs.rules src_trs ! 1
+                src_signature = Ari.CTrs.signature src_trs in
+            buildProblem src_signature Nothing [] src_rules
+        Ari.Problem.CSCTrs src_trs ->
+            let ctrs = Ari.CSCTrs.ctrs src_trs
+                replacement_map = Ari.CSCTrs.replacementMap src_trs in
+            let src_rules = Ari.CTrs.rules ctrs ! 1
+                src_signature = Ari.CTrs.signature ctrs in
+            buildProblem src_signature (Just replacement_map) [] src_rules
         _ -> Left "XTC export is not yet supported for the given rewrite system"
 
-buildProblem :: SrcSignature -> Maybe SrcReplacementMap -> [SrcRule] -> Either String DstProblem
-buildProblem src_signature replacement_map src_rules = do
-    dst_rules <- mapM convertRule src_rules
+buildProblem :: SrcSignature -> Maybe SrcReplacementMap -> [SrcRule] -> [SrcCRule] -> Either String DstProblem
+buildProblem src_signature replacement_map src_rules src_cond_rules = do
+    dst_uncond_rules <- mapM convertRule src_rules
+    let dst_cond_rules = map convertCRule src_cond_rules
+    let dst_rules = dst_uncond_rules ++ dst_cond_rules
     let dst_signature = convertSignature replacement_map src_signature
     trs <- buildTrs dst_signature dst_rules
     return TPDB.Problem {
@@ -73,6 +89,16 @@ buildTrs TPDB.HigherOrderSignature _ = Left "higher order is not yet supported"
 symbol :: String -> Int -> TPDB.Identifier
 symbol s a = TPDB.mk a $ Text.pack s
 
+convertCRule :: SrcCRule -> DstRule
+convertCRule (Ari.CTrs.CRule {Ari.CTrs.lhs = src_lhs, Ari.CTrs.rhs = src_rhs, Ari.CTrs.conditions = src_conditions}) =
+    TPDB.Rule {
+        TPDB.lhs = convertTerm src_lhs,
+        TPDB.rhs = convertTerm src_rhs,
+        TPDB.relation = TPDB.Strict,
+        TPDB.top = False,
+        TPDB.original_variable = Nothing,
+        TPDB.conditions = map (\(l :== r) -> (convertTerm l, convertTerm r)) src_conditions}
+
 convertRule :: SrcRule -> Either String DstRule
 convertRule (Ari.Rule lhs rhs cost) =
     if cost /= 0 && cost /= 1 then Left "XTC only supports cost 0 and 1" else
@@ -81,7 +107,8 @@ convertRule (Ari.Rule lhs rhs cost) =
         TPDB.rhs = convertTerm rhs,
         TPDB.relation = if cost == 1 then TPDB.Strict else TPDB.Weak,
         TPDB.top = False,
-        TPDB.original_variable = Nothing}
+        TPDB.original_variable = Nothing,
+        TPDB.conditions = []}
 
 convertTerm :: SrcTerm -> DstTerm
 convertTerm (Ari.Var x) = TPDB.Var $ symbol x 0
