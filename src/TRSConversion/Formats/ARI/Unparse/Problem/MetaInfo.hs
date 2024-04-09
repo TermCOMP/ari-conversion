@@ -28,7 +28,7 @@ import TRSConversion.Unparse.Utils (filterEmptyDocs)
 -- >>> unparseAriMetaInfo emptyMetaInfo
 -- Nothing
 unparseAriMetaInfo :: MetaInfo -> Doc ann
-unparseAriMetaInfo (MetaInfo {comment = cs, doi= ds, submitted = sub, copsNum = cn}) =
+unparseAriMetaInfo (MetaInfo {comment = cs, doi= ds, submitted = sub, copsNum = cn, origTpdbFilename = tpdb, xtcFilename = xtc}) =
   if null metaBlocks
     then mempty
     else vsep metaBlocks
@@ -39,6 +39,8 @@ unparseAriMetaInfo (MetaInfo {comment = cs, doi= ds, submitted = sub, copsNum = 
         maybe [] (map (metaLine "author")) sub
         ++ [ maybe emptyDoc (metaLine "doi") ds
            , maybe emptyDoc (metaLine "cops") cn
+           , maybe emptyDoc (metaLine "origtpdbfilename") tpdb
+           , maybe emptyDoc (metaLine "xtcfilename") xtc
            ]
         ++ maybe [] (map commentLine) cs
 

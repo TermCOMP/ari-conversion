@@ -36,7 +36,7 @@ packages:
 #
 extra-deps:
   - git: git@github.com:TermCOMP/haskell-tpdb.git
-    commit: 63d34b921362e3356ca2548c6cad4569150e49f2
+    commit: e9864f1e1e92e435e48de1b896e6cf27fa7ef5b4
 #  - tpdb-2.7.2
 #  - prettyprinter-1.7.1
 # - git: https://github.com/commercialhaskell/stack.git

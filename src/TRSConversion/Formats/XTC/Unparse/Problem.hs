@@ -3,6 +3,7 @@ module TRSConversion.Formats.XTC.Unparse.Problem (unparse) where
 
 import qualified TRSConversion.Problem.Trs.Sig as Ari
 import qualified TRSConversion.Problem.Trs.Trs as Ari
+import qualified TRSConversion.Problem.Common.MetaInfo as Ari
 import qualified TRSConversion.Problem.CTrs.CTrs as Ari.CTrs
 import TRSConversion.Problem.CTrs.CTrs (Condition((:==)))
 import qualified TRSConversion.Problem.CSTrs.CSTrs as Ari.CSTrs
@@ -26,6 +27,7 @@ type SrcTerm = Ari.Term String String
 type SrcFunctionSymbol = Ari.Sig String
 type SrcReplacementMap = Ari.CSTrs.ReplacementMap String
 type SrcTheory = Ari.Theory
+type SrcMetainfo = Ari.MetaInfo
 
 type DstProblem = TPDB.Problem TPDB.Identifier TPDB.Identifier
 type DstTrs = TPDB.TRS TPDB.Identifier TPDB.Identifier
@@ -34,6 +36,7 @@ type DstSignature = TPDB.Signature
 type DstTerm = TPDB.Term TPDB.Identifier TPDB.Identifier
 type DstRule = TPDB.Rule DstTerm
 type DstTheory = TPDB.Theory
+type DstMetainfo = TPDB.Metainformation
 
 unparse :: SrcProblem -> Either String (Prettyprinter.Doc ann)
 unparse src_problem = do
@@ -42,30 +45,31 @@ unparse src_problem = do
 
 convertProblem :: SrcProblem -> Either String DstProblem
 convertProblem p =
+    let metainfo = convertMetainfo $ Ari.Problem.metaInfo p in
     case Ari.Problem.system p of
         Ari.Problem.Trs src_trs ->
             let src_rules = Ari.rules src_trs ! 1
                 src_signature = Ari.signature src_trs in
-            buildProblem src_signature Nothing src_rules []
+            buildProblem src_signature Nothing src_rules [] metainfo
         Ari.Problem.CSTrs src_trs ->
             let src_rules = Ari.CSTrs.rules src_trs ! 1
                 replacement_map = Ari.CSTrs.replacementMap src_trs
                 src_signature = Ari.CSTrs.signature src_trs in
-            buildProblem src_signature (Just replacement_map) src_rules []
+            buildProblem src_signature (Just replacement_map) src_rules [] metainfo
         Ari.Problem.CTrs src_trs ->
             let src_rules = Ari.CTrs.rules src_trs ! 1
                 src_signature = Ari.CTrs.signature src_trs in
-            buildProblem src_signature Nothing [] src_rules
+            buildProblem src_signature Nothing [] src_rules metainfo
         Ari.Problem.CSCTrs src_trs ->
             let ctrs = Ari.CSCTrs.ctrs src_trs
                 replacement_map = Ari.CSCTrs.replacementMap src_trs in
             let src_rules = Ari.CTrs.rules ctrs ! 1
                 src_signature = Ari.CTrs.signature ctrs in
-            buildProblem src_signature (Just replacement_map) [] src_rules
+            buildProblem src_signature (Just replacement_map) [] src_rules metainfo
         _ -> Left "XTC export is not yet supported for the given rewrite system"
 
-buildProblem :: SrcSignature -> Maybe SrcReplacementMap -> [SrcRule] -> [SrcCRule] -> Either String DstProblem
-buildProblem src_signature replacement_map src_rules src_cond_rules = do
+buildProblem :: SrcSignature -> Maybe SrcReplacementMap -> [SrcRule] -> [SrcCRule] -> TPDB.Metainformation -> Either String DstProblem
+buildProblem src_signature replacement_map src_rules src_cond_rules metainfo = do
     dst_uncond_rules <- mapM convertRule src_rules
     let dst_cond_rules = map convertCRule src_cond_rules
     let dst_rules = dst_uncond_rules ++ dst_cond_rules
@@ -77,7 +81,8 @@ buildProblem src_signature replacement_map src_rules src_cond_rules = do
         TPDB.strategy = Nothing,
         TPDB.full_signature = dst_signature,
         TPDB.startterm = Nothing,
-        TPDB.attributes = TPDB.compute_attributes dst_rules}
+        TPDB.attributes = TPDB.compute_attributes dst_rules,
+        TPDB.metainformation = metainfo}
 
 buildTrs :: DstSignature -> [DstRule] -> Either String DstTrs
 buildTrs (TPDB.Signature fs) rules = Right $ TPDB.RS {
@@ -138,3 +143,10 @@ getReplacementMap replacement_map name = do
     rm <- replacement_map
     (_,positions) <- find (\(n,_) -> n == name) rm
     return $ TPDB.Replacementmap positions
+
+convertMetainfo :: SrcMetainfo -> DstMetainfo
+convertMetainfo m =
+    TPDB.Metainformation {
+        TPDB.originalfilename = Ari.origTpdbFilename m,
+        TPDB.xtcfilename = Nothing
+    }

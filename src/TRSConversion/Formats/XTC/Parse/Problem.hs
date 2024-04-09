@@ -2,6 +2,7 @@ module TRSConversion.Formats.XTC.Parse.Problem (parse) where
 
 import qualified TRSConversion.Problem.Trs.Sig as Ari
 import qualified TRSConversion.Problem.Trs.Trs as Ari
+import qualified TRSConversion.Problem.Common.MetaInfo as Ari
 import qualified TRSConversion.Problem.CTrs.CTrs as Ari.CTrs
 import TRSConversion.Problem.CTrs.CTrs (Condition((:==)))
 import qualified TRSConversion.Problem.Problem as Ari.Problem
@@ -9,7 +10,6 @@ import qualified TRSConversion.Problem.CSTrs.CSTrs as Ari.CSTrs
 import qualified TRSConversion.Problem.CSCTrs.CSCTrs as Ari.CSCTrs
 import qualified TPDB.Data as TPDB
 import qualified TPDB.XTC.Read as Read
-import qualified TRSConversion.Problem.Common.MetaInfo as MetaInfo ( emptyMetaInfo )
 import qualified Data.IntMap as IntMap
 import qualified Data.Text as Text
 import TPDB.Data (Funcsym)
@@ -22,6 +22,7 @@ type SrcRule = (SrcTerm, SrcTerm)
 type SrcCRule = (SrcTerm, SrcTerm, [SrcRule])
 type SrcTerm = TPDB.Term TPDB.Identifier TPDB.Identifier
 type SrcTheory = TPDB.Theory
+type SrcMetainfo = TPDB.Metainformation
 
 type DstProblem = Ari.Problem.Problem String String String
 type DstSignature = Ari.TrsSig String
@@ -31,6 +32,7 @@ type DstTerm = Ari.Term String String
 type DstFunctionSymbol = Ari.Sig String
 type DstReplacementMap = Ari.CSTrs.ReplacementMap String
 type DstTheory = Ari.Theory
+type DstMetainfo = Ari.MetaInfo
 
 parse :: FilePath -> IO (Either String DstProblem)
 parse f = do
@@ -74,7 +76,7 @@ convertProblem p = do
                         Ari.CSCTrs.ctrs = buildCTrs dst_cond_rules dst_signature}
     return $ Ari.Problem.Problem {
         Ari.Problem.system = system,
-        Ari.Problem.metaInfo = MetaInfo.emptyMetaInfo}
+        Ari.Problem.metaInfo = convertMetainfo $ TPDB.metainformation p}
 
 convertRule :: SrcRule -> DstRule
 convertRule (lhs, rhs) = Ari.mkRule (convertTerm lhs) (convertTerm rhs)
@@ -125,3 +127,10 @@ convertReplacementMap (TPDB.Signature fs) = Right $
                 Just (TPDB.Replacementmap m) -> (f',m)
                 Nothing -> (f',[1..TPDB.fs_arity f])) fs
 convertReplacementMap TPDB.HigherOrderSignature = Left "higher order is not yet supported"
+
+convertMetainfo :: SrcMetainfo -> DstMetainfo
+convertMetainfo m =
+    Ari.emptyMetaInfo {
+        Ari.origTpdbFilename = TPDB.originalfilename m,
+        Ari.xtcFilename = TPDB.xtcfilename m
+    }

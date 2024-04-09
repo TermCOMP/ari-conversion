@@ -31,7 +31,9 @@ data MetaInfo = MetaInfo
     -- | The original cops number.
     copsNum :: Maybe String,
     -- | The individual(s) who submitted the problem. e.g. @Just ["Takahito Aoto","Junichi Yoshida","Yoshihito Toyama"]@
-    submitted :: Maybe [String]
+    submitted :: Maybe [String],
+    origTpdbFilename :: Maybe String,
+    xtcFilename :: Maybe String
   }
   deriving (Eq, Show)
 
@@ -52,6 +54,16 @@ mergeMetaInfo m1 m2 =
                (Just c1, Just c2) | c1 == c2 -> copsNum m1
                                   | otherwise -> Nothing
                (a, b) -> a <|> b
+           , origTpdbFilename =
+             case (origTpdbFilename m1, origTpdbFilename m2) of
+              (Just c1, Just c2) | c1 == c2 -> Just c1
+                                 | otherwise -> Nothing
+              (a, b) -> a <|> b
+           , xtcFilename =
+             case (xtcFilename m1, xtcFilename m2) of
+              (Just c1, Just c2) | c1 == c2 -> Just c1
+                                 | otherwise -> Nothing
+              (a, b) -> a <|> b
            }
 
 -- | Default value for an empty 'MetaInfo' object. Can be modified as shown below.
@@ -63,5 +75,7 @@ emptyMetaInfo =
     { comment = Nothing,
       doi = Nothing,
       submitted = Nothing,
-      copsNum = Nothing
+      copsNum = Nothing,
+      origTpdbFilename = Nothing,
+      xtcFilename = Nothing
     }

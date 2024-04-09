@@ -20,7 +20,7 @@ where
 -- parseVariable,
 
 import qualified Data.Map.Strict as M
-import Text.Megaparsec (count, getOffset, parseError, (<|>), hidden)
+import Text.Megaparsec (count, getOffset, parseError, (<|>))
 import qualified Text.Megaparsec.Error.Builder as E
 
 import TRSConversion.Formats.ARI.Parse.Utils (
