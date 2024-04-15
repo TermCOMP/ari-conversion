@@ -22,9 +22,10 @@ import qualified Data.IntMap as IntMap
 import Prettyprinter (Doc, Pretty, hsep, parens, pretty, space, vsep, (<+>))
 
 import TRSConversion.Problem.CTrs.CTrs (CRule (..), CTrs (..), CondType (..), Condition (..))
-import TRSConversion.Problem.Trs.TrsSig (TrsSig (..))
+import TRSConversion.Problem.Trs.TrsSig (TrsSig (..), Sig (..))
 import TRSConversion.Formats.ARI.Unparse.Problem.Term (unparsePrefixTerm)
 import TRSConversion.Unparse.Utils (filterEmptyDocs, prettyBlock)
+import TRSConversion.Formats.ARI.Unparse.Problem.Utils (unparseIdentifier)
 
 unparseAriCTrs :: (Pretty f, Pretty v) =>CTrs f v -> Either String (Doc ann)
 unparseAriCTrs ctrs = do
@@ -36,8 +37,12 @@ unparseAriCTrs ctrs = do
         ]
   return $ vsep (filterEmptyDocs trsElements)
 
+unparseFunctionSymbol :: (Pretty f) => Sig f -> Doc ann
+unparseFunctionSymbol f =
+  unparseIdentifier (fsym f) <+> pretty (arity f)
+
 unparseAriCTrsSig :: (Pretty f) => TrsSig f -> Either String (Doc ann)
-unparseAriCTrsSig (FunSig fs) = Right (vsep $ map (prettyBlock "fun" . pretty) fs)
+unparseAriCTrsSig (FunSig fs) = Right (vsep $ map (prettyBlock "fun" . unparseFunctionSymbol) fs)
 
 unparseAriCSystems :: (Pretty f, Pretty v) => IntMap [CRule f v] -> Doc ann
 unparseAriCSystems systems = vsep $ fmap (uncurry unparseAriCRules) (IntMap.toList systems)

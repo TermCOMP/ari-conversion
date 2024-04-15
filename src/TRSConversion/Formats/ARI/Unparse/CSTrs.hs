@@ -20,6 +20,7 @@ import TRSConversion.Problem.Trs.Sig (Sig (..), Theory (None))
 import TRSConversion.Problem.Trs.TrsSig (TrsSig (..))
 import TRSConversion.Formats.ARI.Unparse.Problem.Rule (unparseAriSystems)
 import TRSConversion.Unparse.Utils (filterEmptyDocs)
+import TRSConversion.Formats.ARI.Unparse.Problem.Utils (unparseIdentifier)
 
 unparseAriCSTrs :: (Pretty f, Pretty v, Ord f) => CSTrs f v -> Either String (Doc ann)
 unparseAriCSTrs cstrs = do
@@ -43,5 +44,5 @@ unparseAriReplacementSig (FunSig fs) repMap = do
   repMapM = M.fromList repMap
   prettyM = M.map (\ints -> mempty <+> ":replacement-map" <+> (parens . hsep $ map pretty ints)) repMapM
 
-  prettySigLine (Sig {fsym=f, arity=a, theory=None}) = Right $ parens $ "fun" <+> pretty f <+> pretty a <> M.findWithDefault mempty f prettyM
+  prettySigLine (Sig {fsym=f, arity=a, theory=None}) = Right $ parens $ "fun" <+> unparseIdentifier f <+> pretty a <> M.findWithDefault mempty f prettyM
   prettySigLine _ = Left $ "Equational CSTrss are not yet supported"
