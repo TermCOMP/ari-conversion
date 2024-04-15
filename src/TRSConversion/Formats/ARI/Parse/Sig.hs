@@ -16,7 +16,7 @@ where
 
 import Data.Char (isDigit)
 import Data.Text (unpack)
-import Text.Megaparsec (takeWhile1P, (<?>))
+import Text.Megaparsec (takeWhile1P, (<?>), try)
 
 import TRSConversion.Formats.ARI.Parse.Utils (ARIParser, FunSymb, lexeme, restrictedIdent, sExpr, keyword)
 import TRSConversion.Problem.Trs.Sig (Sig (..), Theory (..))
@@ -46,4 +46,6 @@ naturalNumber =
   lexeme (read . unpack <$> takeWhile1P (Just "digit") isDigit) <?> "natural number"
 
 parseTheory :: ARIParser Theory
-parseTheory = sExpr ":theory" ((keyword "A" $> A) <|> (keyword "C" $> C) <|> (keyword "AC" $> AC)) <|> return None
+parseTheory = try (do
+  _ <- keyword ":theory"
+  (keyword "A" $> A) <|> (keyword "C" $> C) <|> (keyword "AC" $> AC)) <|> return None
