@@ -31,6 +31,7 @@ module TRSConversion.Formats.ARI.Parse.Utils (
 
   -- * Predicates
   isNewline,
+  isIdentChar,
 
   -- * ParseErrors
   indexOutOfRangeError,
@@ -40,12 +41,12 @@ module TRSConversion.Formats.ARI.Parse.Utils (
 
 import Control.Applicative (Alternative)
 import Control.Monad (MonadPlus)
-import Data.Char (isAscii, isPrint)
+import Data.Char (isLetter, isDigit)
 import Data.Functor (void)
 import Data.Text (Text, unpack)
 import Text.Megaparsec (
   ErrorFancy (..),
-  MonadParsec (parseError),
+  MonadParsec (parseError, takeP),
   ShowErrorComponent,
   between,
   empty,
@@ -58,8 +59,7 @@ import Text.Megaparsec (
   takeWhile1P,
   takeWhileP,
   try,
-  (<?>),
-  (<|>),
+  (<|>), customFailure,
  )
 import Text.Megaparsec.Char (char, space1, string)
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -167,11 +167,11 @@ symbol :: Text -> ARIParser Text
 symbol = L.symbol spaces
 
 isIdentChar :: Char -> Bool
-isIdentChar c = isAscii c && isPrint c && c `notElem` nonIdentChar
+isIdentChar c = isLetter c || isDigit c || c `elem` identChar
  where
   -- printable ASCII characters that are not accepted
-  nonIdentChar :: [Char]
-  nonIdentChar = " ;:()"
+  identChar :: [Char]
+  identChar = "~!@$%^&*_-+=<>.?/"
 
 {- | @'ident'@ parses ari identifiers
 
@@ -180,16 +180,19 @@ any character in {(, ), ;, :}
 -}
 ident :: ARIParser (Token String)
 ident = lexeme $ do
-  txt <- tokenOfText (takeWhile1P Nothing isIdentChar) <?> "identifier"
-  pure $ fmap unpack txt
-
-ident'Char :: [Char]
-ident'Char = " \t\n\r;()"
-
-ident' :: ARIParser (Token String)
-ident' = lexeme $ do
-  txt <- tokenOfText (takeWhile1P Nothing (`notElem` ident'Char)) <?> "identifier"
-  pure $ fmap unpack txt
+  simple_identifier <- tokenOfText $ takeWhileP (Just "identifier") isIdentChar
+  identifier <- if tokenLength simple_identifier == 0 then (
+    do
+      opening_quote <- tokenOfText $ takeWhile1P (Just "quote") (== '|')
+      if tokenLength opening_quote == 1 then
+        do
+          quoted_identifier <- tokenOfText $ takeWhile1P (Just "identifier") (/= '|')
+          _ <- tokenOfText $  takeP (Just "quote") 1
+          return quoted_identifier
+      else
+        customFailure (InvalidIdentifier (show opening_quote) "identifier must no start with ||"))
+    else return simple_identifier
+  pure $ fmap unpack identifier
 
 keywords :: [String]
 keywords =
@@ -198,14 +201,7 @@ keywords =
     ++ ["TRS", "MSTRS", "LCSTRS", "CTRS", "CSTRS", "CSCTRS"]
 
 restrictedIdent :: ARIParser (Token String)
-restrictedIdent = label "identifier" . lexeme $ do
-  -- o <- getOffset
-  identifier' <- tokenOfText $ takeWhile1P Nothing isIdentChar
-  let identifier = unpack <$> identifier'
-  -- when (tokenValue identifier `elem` keywords)
-  --   $ parseError
-  --   $ E.errFancy o (customErr (unpack (tokenText identifier) `isInvalidIdentifier` "because it is a reserved keyword"))
-  pure identifier
+restrictedIdent = ident
 
 keywordChar :: ARIParser Char
 keywordChar = satisfy isIdentChar
@@ -235,7 +231,7 @@ data LTree l
   | Node [LTree l]
 
 sExpr'' :: ARIParser (LTree (Token String))
-sExpr'' = (symbol "(" *> many sExpr'' >>= \es -> symbol ")" *> return (Node es)) <|> (ident' >>= \i -> return (Leaf i))
+sExpr'' = (symbol "(" *> many sExpr'' >>= \es -> symbol ")" *> return (Node es)) <|> (ident >>= \i -> return (Leaf i))
 
 {- | @'parens' p@ parses @'('@ followed by @p@ followed by @')'@.
 

@@ -12,6 +12,8 @@ where
 import Prettyprinter (Doc, Pretty, hsep, parens, pretty, (<+>))
 
 import TRSConversion.Problem.Common.Term (Term (..))
+import TRSConversion.Formats.ARI.Unparse.Problem.Utils
+    ( unparseIdentifier )
 
 -- | Unparse 'Term's into prefix notation:
 -- see examples below and tests for more examples.
@@ -27,9 +29,9 @@ import TRSConversion.Problem.Common.Term (Term (..))
 -- >>> unparsePrefixTerm (Fun "c" [])
 -- c
 unparsePrefixTerm :: (Pretty f, Pretty v) => Term f v -> Doc ann
-unparsePrefixTerm (Var x) = pretty x
-unparsePrefixTerm (Fun fsym []) = pretty fsym -- Constant
-unparsePrefixTerm (Fun fsym args) = parens (pretty fsym <+> unparseTerms args)
+unparsePrefixTerm (Var x) = unparseIdentifier x
+unparsePrefixTerm (Fun fsym []) = unparseIdentifier fsym -- Constant
+unparsePrefixTerm (Fun fsym args) = parens (unparseIdentifier fsym <+> unparseTerms args)
   where
     -- Unparse a list of terms, adding parentheses to nested terms
     unparseTerms :: (Pretty f, Pretty v) => [Term f v] -> Doc ann
