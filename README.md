@@ -2,7 +2,7 @@
 
 This repository is the home of three tools:
 
- * trs-converion: can converts between the ARI and COPS formats
+ * trs-converion: can converts between the ARI, COPS, and XTC formats
  * format-type: extracts the type of the problem from the ARI format
  * ari-syntax-checker: checks if a ARI problem is syntactically correct
 
@@ -22,7 +22,7 @@ After building you can run the respective tool with:
 
     stack exec ari-syntax-checker -- FILE
 
-where FORMAT can be "COPS", "ARI" or CPF3 (latter only supported as target).
+where FORMAT can be "COPS", "ARI", "XTC" or "CPF3" (latter only supported as target).
 
 
 ## Installing tools
