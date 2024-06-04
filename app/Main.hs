@@ -59,6 +59,8 @@ data Config = Config
   , confCommutationFlag :: Bool
   , confOutputFile :: Maybe FilePath
   , confAddCopsNum :: Maybe String
+  , confStrategy :: Maybe String
+  , confMode :: Maybe String
   }
 
 defaultConfig :: Config
@@ -69,6 +71,8 @@ defaultConfig =
     , confCommutationFlag = False
     , confOutputFile = Nothing
     , confAddCopsNum = Nothing
+    , confStrategy = Nothing
+    , confMode = Nothing
     }
 
 options :: [OptDescr (Config -> IO Config)]
@@ -101,6 +105,22 @@ generalOptions =
       ( NoArg (\c -> pure $ c{confCommutationFlag = True})
       )
       "print problem as a COMMUTATION\nproblem in the COPS format"
+  , Option
+      ['s']
+      ["strategy"]
+      ( ReqArg
+        ( \s c -> pure $ c{confStrategy = Just s})
+        "STRATEGY"
+      )
+      "strategy to be added to the output, if applicable"
+  , Option
+      ['m']
+      ["mode"]
+      ( ReqArg
+        ( \s c -> pure $ c{confMode = Just s})
+        "MODE"
+      )
+      "the mode -- termCOMP or CoCo"
   , Option
       ['h']
       ["help"]
@@ -187,6 +207,8 @@ data Context = Context
   , commutationFlag :: Bool
   , outputFile :: Maybe FilePath
   , addCopsNum :: Maybe String
+  , strategy :: Maybe MetaInfo.Strategy
+  , mode :: MetaInfo.Mode
   }
 
 contextFromConfig :: Config -> Either String Context
@@ -195,6 +217,12 @@ contextFromConfig conf = do
   trgName <- maybe (Left "Error: missing target format (-t)") Right $ confTarget conf
   src <- parseFormat srcName
   trg <- parseFormat trgName
+  m <- case confMode conf of
+    Nothing -> Right MetaInfo.defaultMode
+    Just s -> MetaInfo.parseMode s
+  s <- case confStrategy conf of
+    Nothing -> Right Nothing
+    Just s -> MetaInfo.parseStrategy s >>= (return . Just)
   let outFile = confOutputFile conf
   pure
     Context
@@ -203,6 +231,8 @@ contextFromConfig conf = do
       , outputFile = outFile
       , commutationFlag = confCommutationFlag conf
       , addCopsNum = confAddCopsNum conf
+      , strategy = s
+      , mode = m
       }
  where
   parseFormat s = case toUpper <$> s of
@@ -216,6 +246,7 @@ contextFromConfig conf = do
           [ "ERROR: '" ++ s ++ "' is not a valid FORMAT"
           , "(Must be one of: " ++ show [minBound .. maxBound :: Format] ++ ")"
           ]
+
 
 runApp :: Context -> FilePath -> IO ()
 runApp config inputFile = do
@@ -240,9 +271,12 @@ runApp config inputFile = do
         Right x -> return x
 
   -- modify meta-info
-  let metaInfo = MetaInfo.copsNum (Problem.metaInfo problem)
+  let metaInfo = Problem.metaInfo problem
+  let copsNum = MetaInfo.copsNum metaInfo
   let problem' = problem {
-        Problem.metaInfo = (Problem.metaInfo problem){MetaInfo.copsNum = addCopsNum config <|> metaInfo}
+        Problem.metaInfo = metaInfo{
+          MetaInfo.copsNum = addCopsNum config <|> copsNum,
+          MetaInfo.strategy = strategy config}
         }
 
   doc <- case target config of

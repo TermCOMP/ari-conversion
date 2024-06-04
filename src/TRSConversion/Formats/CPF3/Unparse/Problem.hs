@@ -11,41 +11,96 @@ import qualified Data.Map.Strict as Map
 import Data.Text (pack)
 import Prettyprinter (Pretty, pretty)
 import Text.Hamlet.XML (xml)
-import Text.XML (Document (..), Element (..), Node, Prologue (..))
+import Text.XML (Document (..), Element (..), Node (NodeElement), Prologue (..))
 
 import TRSConversion.Problem.CTrs.CTrs (CTrs, Condition ((:==)))
 import qualified TRSConversion.Problem.CTrs.CTrs as CTrs
 import TRSConversion.Problem.CTrs.Infeasibility (Infeasibility (..))
 import qualified TRSConversion.Problem.Problem as Prob
 import TRSConversion.Problem.Trs.Trs (Rule (..), Sig (..), Term (..), Trs (..), TrsSig (..))
+import TRSConversion.Problem.Trs.Sig (Theory(..))
+import TRSConversion.Problem.Common.MetaInfo
 
 problemToXML :: (Pretty f, Pretty v) => Prob.Problem f v s -> Document
 problemToXML prob = Document (Prologue [] Nothing []) root []
  where
+  meta = Prob.metaInfo prob
   root = Element "input" Map.empty $ case Prob.system prob of
-    Prob.Trs trss -> trssToNodes trss
+    Prob.Trs trss -> trssToNodes trss meta
     Prob.CTrs ctrss -> ctrsInputNodes ctrss
     Prob.Infeasibility inf -> infToNodes inf
     _ -> error "CPF3 currently only supports TRSs, CTRSs, two-TRSs, and infeasibility problems"
 
 -- One or two trss
 
-trssToNodes :: (Pretty f, Pretty v) => Trs f v -> [Node]
-trssToNodes trs@Trs{signature = sig, rules = rs}
+trssToNodes :: (Pretty f, Pretty v) => Trs f v -> MetaInfo -> [Node]
+trssToNodes trs@Trs{signature = sig, rules = rs} meta
   | numSystems trs == 2 = twoTrsToNodes sig (rs IntMap.! 1) (rs IntMap.! 2)
-  | numSystems trs == 1 = singleTrsToNodes sig (rs IntMap.! 1)
+  | numSystems trs == 1 = singleTrsToNodes sig (rs IntMap.! 1) meta
   | otherwise = error "CPF3 does not support output of problems with more than 2 trss"
 
-singleTrsToNodes :: (Pretty f, Pretty v) => TrsSig f -> [Rule f v] -> [Node]
-singleTrsToNodes sig rs =
-  [xml|
-<trsWithSignature>
-  ^{signatureToNodes sig}
-  <trs>
-    <rules>
-      $forall rule <- rs
-        ^{ruleToNodes rule}
-|]
+singleTrsToNodes :: (Pretty f, Pretty v) => TrsSig f -> [Rule f v] -> MetaInfo -> [Node]
+singleTrsToNodes sig@(FunSig sigs) rs meta =
+  case mode meta of
+    CoCo ->
+      [xml|
+        <trsWithSignature>
+          ^{signatureToNodes sig}
+          <trs>
+            <rules>
+              $forall rule <- rs
+                ^{ruleToNodes rule}
+      |]
+    TermCOMP ->
+      let rel = filter (\x -> cost x == 0) rs
+          non_rel = filter (\x -> cost x > 0) rs
+          a_symbols = filter (\x -> theory x == A || theory x == AC) sigs
+          c_symbols = filter (\x -> theory x == C || theory x == AC) sigs in
+      if null a_symbols && null c_symbols then
+        [NodeElement $ Element {
+          elementName = "trsInput",
+          elementAttributes = Map.empty,
+          elementNodes =
+            [xml|
+                <trs>
+                  <rules>
+                    $forall rule <- non_rel
+                      ^{ruleToNodes rule}
+            |]
+            ++ case strategy meta of
+                  Nothing -> []
+                  Just Innermost ->
+                    [xml|
+                      <strategy>
+                        <innermost>
+                    |]
+                  Just Outermost ->
+                    [xml|
+                      <strategy>
+                        <outermost>
+                    |]
+            ++ [xml|
+                <relativeRules>
+                  <rules>
+                    $forall rule <- rel
+                      ^{ruleToNodes rule}
+            |]}]
+      else if null rel then
+        [xml|
+          <acRewriteSystem>
+            <trs>
+              <rules>
+                $forall rule <- non_rel
+                  ^{ruleToNodes rule}
+            <Asymbols>
+              $forall f <- a_symbols
+                <name>#{pack $ show $ pretty $ fsym f}
+            <Csymbols>
+              $forall f <- c_symbols
+                <name>#{pack $ show $ pretty $ fsym f}
+        |]
+      else
+        error "CPF3 does not support equational rewriting with relative rules"
 
 twoTrsToNodes :: (Pretty f, Pretty v) => TrsSig f -> [Rule f v] -> [Rule f v] -> [Node]
 twoTrsToNodes sig r1 r2 =

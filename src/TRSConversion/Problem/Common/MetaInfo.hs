@@ -7,6 +7,11 @@
 module TRSConversion.Problem.Common.MetaInfo
   ( -- * Types
     MetaInfo (..),
+    Mode (..),
+    Strategy (..),
+    defaultMode,
+    parseMode,
+    parseStrategy,
     mergeMetaInfo,
 
     -- * Defaults
@@ -15,6 +20,35 @@ module TRSConversion.Problem.Common.MetaInfo
 where
 
 import Control.Applicative ((<|>))
+import Data.Char (toUpper)
+
+data Mode = TermCOMP | CoCo deriving (Eq, Ord, Enum, Bounded, Show)
+data Strategy = Innermost | Outermost deriving (Eq, Ord, Enum, Bounded, Show)
+
+defaultMode :: Mode
+defaultMode = TermCOMP
+
+parseMode :: [Char] -> Either String Mode
+parseMode s = case toUpper <$> s of
+  "TERMCOMP" -> Right TermCOMP
+  "COCO" -> Right CoCo
+  _ ->
+    Left
+    $ unlines
+      [ "ERROR: '" ++ s ++ "' is not a valid MODE"
+      , "(Must be one of: " ++ show [minBound .. maxBound :: Mode] ++ ")"
+      ]
+
+parseStrategy :: [Char] -> Either String Strategy
+parseStrategy s = case toUpper <$> s of
+  "INNERMOST" -> Right Innermost
+  "OUTERMOST" -> Right Outermost
+  _ ->
+    Left
+    $ unlines
+      [ "ERROR: '" ++ s ++ "' is not a valid STRATEGY"
+      , "(Must be one of: " ++ show [minBound .. maxBound :: Strategy] ++ ")"
+      ]
 
 -- | The type for additional information about a TRS. Includes keywords for the problem 'origin',
 -- 'doi', and arbitrary 'comment's.
@@ -33,7 +67,9 @@ data MetaInfo = MetaInfo
     -- | The individual(s) who submitted the problem. e.g. @Just ["Takahito Aoto","Junichi Yoshida","Yoshihito Toyama"]@
     submitted :: Maybe [String],
     origTpdbFilename :: Maybe String,
-    xtcFilename :: Maybe String
+    xtcFilename :: Maybe String,
+    strategy :: Maybe Strategy,
+    mode :: Mode
   }
   deriving (Eq, Show)
 
@@ -64,6 +100,12 @@ mergeMetaInfo m1 m2 =
               (Just c1, Just c2) | c1 == c2 -> Just c1
                                  | otherwise -> Nothing
               (a, b) -> a <|> b
+            , strategy =
+             case (strategy m1, strategy m2) of
+              (Just c1, Just c2) | c1 == c2 -> Just c1
+                                 | otherwise -> Nothing
+              (a, b) -> a <|> b
+            , mode = mode m1
            }
 
 -- | Default value for an empty 'MetaInfo' object. Can be modified as shown below.
@@ -77,5 +119,7 @@ emptyMetaInfo =
       submitted = Nothing,
       copsNum = Nothing,
       origTpdbFilename = Nothing,
-      xtcFilename = Nothing
+      xtcFilename = Nothing,
+      strategy = Nothing,
+      mode = TermCOMP
     }
