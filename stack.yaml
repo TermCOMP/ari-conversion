@@ -35,7 +35,7 @@ packages:
 # forks / in-progress versions pinned to a git hash. For example:
 #
 extra-deps:
-  - git: git@github.com:TermCOMP/haskell-tpdb.git
+  - git: https://github.com/TermCOMP/haskell-tpdb.git
     commit: e9864f1e1e92e435e48de1b896e6cf27fa7ef5b4
 #  - tpdb-2.7.2
 #  - prettyprinter-1.7.1
